@@ -1,4 +1,4 @@
-import { Box, styled } from '@mui/material';
+import {styled } from '@mui/material';
 import { motion } from 'framer-motion';
 const RobotContainer = styled(motion.div)({
   position: 'relative',
@@ -15,18 +15,18 @@ const RobotImage = styled('img')({
   objectFit: 'contain',
 });
 
-const StatusMessage = styled(motion.div)({
-  position: 'absolute',
-  bottom: '20px',
-  left: '50%',
-  transform: 'translateX(-50%)',
-  backgroundColor: 'rgba(255,255,255,0.9)',
-  padding: '10px 20px',
-  borderRadius: '20px',
-  boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-  fontSize: '16px',
-  color: '#333',
-});
+// const StatusMessage = styled(motion.div)({
+//   position: 'absolute',
+//   bottom: '20px',
+//   left: '50%',
+//   transform: 'translateX(-50%)',
+//   backgroundColor: 'rgba(255,255,255,0.9)',
+//   padding: '10px 20px',
+//   borderRadius: '20px',
+//   boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+//   fontSize: '16px',
+//   color: '#333',
+// });
 
 const RobotMascot = () => {
   return (

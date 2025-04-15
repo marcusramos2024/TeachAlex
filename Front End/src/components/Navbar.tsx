@@ -1,4 +1,3 @@
-import React from 'react';
 import { AppBar, Toolbar, Typography, styled } from '@mui/material';
 
 const StyledAppBar = styled(AppBar)({
