@@ -50,9 +50,7 @@ const SideElement = styled(Box)({
   transform: 'translateY(-50%)',
 });
 
-const Navbar = () => {
-  const theme = useTheme();
-  
+const Navbar = () => {  
   return (
     <StyledAppBar position="static">
       <Toolbar sx={{ justifyContent: 'center', px: { xs: 2, sm: 4 } }}>

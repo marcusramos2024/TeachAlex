@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, MouseEvent } from 'react';
-import { Box, Typography, LinearProgress, styled, Paper, keyframes, Divider, IconButton, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Typography, LinearProgress, styled, Paper, keyframes, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import '@fontsource/montserrat/600.css';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -61,33 +61,12 @@ const ConceptSection = styled(Box)({
   boxShadow: 'inset 0 1px 5px rgba(0, 0, 0, 0.08), 0 2px 10px rgba(0, 0, 0, 0.05)',
 });
 
-const ConceptHeading = styled(Typography)({
-  fontFamily: 'Montserrat, sans-serif',
-  fontSize: '1.6rem',
-  fontWeight: 600,
-  marginBottom: '8px',
-  textShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-});
-
 const SubHeading = styled(Typography)({
   fontSize: '0.95rem',
   opacity: 0.9,
   marginBottom: '20px',
   fontWeight: 300,
   textAlign: 'center',
-});
-
-const ProgressContainer = styled(Box)({
-  display: 'flex',
-  alignItems: 'center',
-  gap: '15px',
-  flex: 1,
-});
-
-const ConceptInfo = styled(Box)({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '5px',
 });
 
 const ConceptTitle = styled(Typography)({
@@ -220,7 +199,6 @@ const areNodesOverlapping = (node1: Node, node2: Node, containerWidth: number, c
   
   // Approximate node dimensions with responsive sizing
   const baseNodeWidth = Math.min(160, containerWidth * 0.2);
-  const nodeHeight = Math.min(50, containerHeight * 0.1);
   const minDistance = baseNodeWidth * 0.8; // Allow some overlap
   
   const distance = Math.sqrt(

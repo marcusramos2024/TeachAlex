@@ -114,7 +114,7 @@ const TypingDot = styled(motion.div)({
   borderRadius: '50%',
 });
 
-const ActionButton = styled(IconButton)(({ theme }) => ({
+const ActionButton = styled(IconButton)(({ }) => ({
   borderRadius: '50%',
   padding: '8px',
   color: '#5f6368',

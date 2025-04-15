@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, IconButton, Paper, styled, Slider, Tooltip, Popover, Typography, Button, Stack, Fade } from '@mui/material';
+import { Box, IconButton, Paper, styled, Slider, Tooltip, Typography, Button, Fade } from '@mui/material';
 import BrushIcon from '@mui/icons-material/Brush';
 import FormatColorFillIcon from '@mui/icons-material/FormatColorFill';
 import DeleteIcon from '@mui/icons-material/Delete';
