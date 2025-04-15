@@ -1,5 +1,5 @@
 import '@fontsource/montserrat/600.css';
-import { AppBar, Toolbar, Typography, styled, Box, useTheme } from '@mui/material';
+import { AppBar, Toolbar, Typography, styled, Box } from '@mui/material';
 
 const StyledAppBar = styled(AppBar)({
   backgroundColor: '#ffffff',
