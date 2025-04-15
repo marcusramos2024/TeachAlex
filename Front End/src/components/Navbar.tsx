@@ -1,3 +1,4 @@
+import '@fontsource/montserrat/600.css';
 import { AppBar, Toolbar, Typography, styled } from '@mui/material';
 
 const StyledAppBar = styled(AppBar)({
@@ -13,9 +14,9 @@ const LogoImage = styled('img')({
 });
 
 const Title = styled(Typography)({
+  fontFamily: 'Montserrat, sans-serif',
   color: '#175cc3',
-  fontWeight: 700,
-  fontSize: '1.5rem',
+  fontSize: '1.75rem',
   letterSpacing: '0.5px',
 });
 

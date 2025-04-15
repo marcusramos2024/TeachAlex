@@ -2,7 +2,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box, styled } from '@mui/material';
 import { BrowserRouter as Router, Routes, Route} from 'react-router-dom';
-import RobotMascot from './components/RobotMascot';
+import VisualizationPane from './components/VisualizationPane';
 import ChatInterface from './components/ChatInterface';
 import Navbar from './components/Navbar';
 import PDFUpload from './components/PDFUpload';
@@ -72,7 +72,7 @@ function App() {
               <Navbar />
               <MainContent>
                 <LeftPanel>
-                  <RobotMascot />
+                  <VisualizationPane />
                 </LeftPanel>
                 <RightPanel>
                   <ChatInterface />
