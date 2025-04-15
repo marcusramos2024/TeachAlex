@@ -6,6 +6,7 @@ import RobotMascot from './components/RobotMascot';
 import ChatInterface from './components/ChatInterface';
 import Navbar from './components/Navbar';
 import PDFUpload from './components/PDFUpload';
+import { SpeedInsights } from "@vercel/speed-insights/react"
 
 const theme = createTheme({
   palette: {
@@ -56,7 +57,8 @@ const RightPanel = styled(Box)({
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={theme}>     
+    <SpeedInsights />
       <CssBaseline />
       <Router>
         <Routes>
