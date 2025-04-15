@@ -7,7 +7,7 @@ import ChatInterface from './components/ChatInterface';
 import Navbar from './components/Navbar';
 import PDFUpload from './components/PDFUpload';
 import { SpeedInsights } from "@vercel/speed-insights/react"
-
+import { Analytics } from "@vercel/analytics/react"
 const theme = createTheme({
   palette: {
     mode: 'light',
@@ -59,6 +59,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>     
     <SpeedInsights />
+    <Analytics />
       <CssBaseline />
       <Router>
         <Routes>
