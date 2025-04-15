@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, MouseEvent } from 'react';
-import { Box, Typography, LinearProgress, styled, Paper, keyframes, Divider, IconButton } from '@mui/material';
+import { Box, Typography, LinearProgress, styled, Paper, keyframes, Divider, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import '@fontsource/montserrat/600.css';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import MobileOffOutlined from '@mui/icons-material/MobileOffOutlined';
 
 // Keyframes for pulsing effect
 const pulse = keyframes`
@@ -30,11 +31,15 @@ const Container = styled(Box)({
 
 const MainHeading = styled(Typography)({
   fontFamily: 'Montserrat, sans-serif',
-  fontSize: '2.2rem',
+  fontSize: 'clamp(1.5rem, 4vw, 2.2rem)',
   fontWeight: 600,
   marginBottom: '8px',
   textShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
   textAlign: 'center',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  width: '100%',
 });
 
 const HeaderSection = styled(Box)({
@@ -104,16 +109,20 @@ const GraphContainer = styled(Box)({
   boxShadow: 'inset 0 1px 8px rgba(0, 0, 0, 0.05)',
   overflow: 'hidden',
   marginBottom: '20px',
+  minHeight: '300px',
+  height: 'calc(100% - 200px)',
 });
 
 const NodeItem = styled(Paper)(({ isActive, isDragging }: { isActive?: boolean, isDragging?: boolean }) => ({
   position: 'absolute',
-  padding: '12px 18px',
+  padding: '10px 15px',
   borderRadius: '20px',
   backgroundColor: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.95)',
   color: '#1a62d6',
   fontWeight: isActive ? 600 : 400,
-  fontSize: '0.95rem',
+  fontSize: 'clamp(0.75rem, 1.5vw, 0.95rem)',
+  width: 'auto',
+  maxWidth: 'clamp(120px, 22vw, 200px)',
   boxShadow: isDragging 
     ? '0 8px 25px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(255, 255, 255, 0.15)' 
     : isActive 
@@ -129,6 +138,15 @@ const NodeItem = styled(Paper)(({ isActive, isDragging }: { isActive?: boolean, 
   animation: isActive && !isDragging ? `${pulse} 2s infinite` : 'none',
   cursor: 'grab',
   userSelect: 'none',
+  textAlign: 'center',
+  whiteSpace: 'normal',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  lineHeight: '1.2',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  minHeight: 'clamp(32px, 6vh, 50px)',
   '&:hover': {
     backgroundColor: '#ffffff',
     transform: 'translate(-50%, -50%) scale(1.1)',
@@ -137,6 +155,10 @@ const NodeItem = styled(Paper)(({ isActive, isDragging }: { isActive?: boolean, 
   '&:active': {
     cursor: 'grabbing',
   },
+  '@media (max-width: 768px)': {
+    padding: '8px 12px',
+    minHeight: 'clamp(28px, 5vh, 40px)',
+  }
 }));
 
 const NavigationControls = styled(Box)({
@@ -147,6 +169,22 @@ const NavigationControls = styled(Box)({
   borderRadius: '12px',
   background: 'rgba(0, 0, 0, 0.07)',
   backdropFilter: 'blur(5px)',
+});
+
+const MobileMessage = styled(Box)({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: '100%',
+  width: '100%',
+  padding: '24px',
+  color: '#fff',
+  textAlign: 'center',
+  gap: '16px',
+  background: 'rgba(0, 0, 0, 0.07)',
+  backdropFilter: 'blur(5px)',
+  borderRadius: '12px',
 });
 
 // Interface for node and concept types
@@ -180,10 +218,10 @@ const areNodesOverlapping = (node1: Node, node2: Node, containerWidth: number, c
   const node2X = (node2.x / 100) * containerWidth;
   const node2Y = (node2.y / 100) * containerHeight;
   
-  // Approximate node dimensions (adjust based on actual size)
-  const nodeWidth = 160;
-  const nodeHeight = 50;
-  const minDistance = nodeWidth * 0.8; // Allow some overlap
+  // Approximate node dimensions with responsive sizing
+  const baseNodeWidth = Math.min(160, containerWidth * 0.2);
+  const nodeHeight = Math.min(50, containerHeight * 0.1);
+  const minDistance = baseNodeWidth * 0.8; // Allow some overlap
   
   const distance = Math.sqrt(
     Math.pow(node1X - node2X, 2) + 
@@ -195,7 +233,7 @@ const areNodesOverlapping = (node1: Node, node2: Node, containerWidth: number, c
 
 // Move overlapping nodes apart
 const resolveOverlap = (nodes: Node[], containerWidth: number, containerHeight: number) => {
-  const adjustmentFactor = 5; // % of container
+  const adjustmentFactor = containerWidth < 600 ? 8 : 5; // Increase spacing on smaller screens
   
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
@@ -205,9 +243,10 @@ const resolveOverlap = (nodes: Node[], containerWidth: number, containerHeight: 
         const dy = nodes[j].y - nodes[i].y;
         const angle = Math.atan2(dy, dx);
         
-        // Move nodes apart
-        nodes[j].x = Math.min(Math.max(nodes[j].x + (Math.cos(angle) * adjustmentFactor), 15), 85);
-        nodes[j].y = Math.min(Math.max(nodes[j].y + (Math.sin(angle) * adjustmentFactor), 15), 85);
+        // Move nodes apart with more space on smaller screens
+        const boundaryMargin = containerWidth < 768 ? 20 : 15;
+        nodes[j].x = Math.min(Math.max(nodes[j].x + (Math.cos(angle) * adjustmentFactor), boundaryMargin), 100 - boundaryMargin);
+        nodes[j].y = Math.min(Math.max(nodes[j].y + (Math.sin(angle) * adjustmentFactor), boundaryMargin), 100 - boundaryMargin);
       }
     }
   }
@@ -216,6 +255,8 @@ const resolveOverlap = (nodes: Node[], containerWidth: number, containerHeight: 
 };
 
 const VisualizationPane = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [animationOffset, setAnimationOffset] = useState(0);
@@ -345,6 +386,10 @@ const VisualizationPane = () => {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Determine appropriate line width based on container size
+    const baseLineWidth = Math.max(1, Math.min(3, container.clientWidth / 300));
+    const highlightedLineWidth = baseLineWidth * 1.5;
+
     // Draw connections
     currentConcept.connections.forEach(connection => {
       const source = currentConcept.nodes.find(node => node.id === connection.source);
@@ -367,22 +412,26 @@ const VisualizationPane = () => {
           draggedNode === source.id ||
           draggedNode === target.id;
         
-        // Set line style based on highlight state
+        // Set line style based on highlight state and screen size
         ctx.strokeStyle = isHighlighted 
           ? 'rgba(255, 255, 255, 0.8)' 
           : 'rgba(255, 255, 255, 0.4)';
-        ctx.lineWidth = isHighlighted ? 3 : 2;
+        ctx.lineWidth = isHighlighted ? highlightedLineWidth : baseLineWidth;
         
+        // Adapt dash size to screen size
+        const dashSize = Math.max(3, Math.min(5, container.clientWidth / 200));
         // Animate line with dash pattern
         ctx.beginPath();
-        ctx.setLineDash([5, 5]);
+        ctx.setLineDash([dashSize, dashSize]);
         ctx.lineDashOffset = -animationOffset; // Animate dash pattern
         ctx.moveTo(sourceX, sourceY);
         ctx.lineTo(targetX, targetY);
         ctx.stroke();
         
-        // Draw small arrow at end
-        const arrowSize = isHighlighted ? 8 : 6;
+        // Draw small arrow at end - size proportional to screen
+        const arrowSize = isHighlighted ? 
+          Math.max(4, Math.min(8, container.clientWidth / 120)) : 
+          Math.max(3, Math.min(6, container.clientWidth / 150));
         const angle = Math.atan2(dy, dx);
         ctx.setLineDash([]);
         ctx.beginPath();
@@ -431,9 +480,12 @@ const VisualizationPane = () => {
     const newX = ((event.clientX - containerRect.left - dragOffset.x) / containerRect.width) * 100;
     const newY = ((event.clientY - containerRect.top - dragOffset.y) / containerRect.height) * 100;
     
+    // Boundary margin adjusts based on screen size
+    const boundaryMargin = containerRect.width < 768 ? 20 : 15;
+    
     // Keep node within bounds (with some padding)
-    const boundedX = Math.min(Math.max(newX, 10), 90);
-    const boundedY = Math.min(Math.max(newY, 10), 90);
+    const boundedX = Math.min(Math.max(newX, boundaryMargin), 100 - boundaryMargin);
+    const boundedY = Math.min(Math.max(newY, boundaryMargin), 100 - boundaryMargin);
     
     // Update the concept nodes using setState
     setConcepts(prevConcepts => {
@@ -518,9 +570,24 @@ const VisualizationPane = () => {
   useEffect(() => {
     drawConnections();
     
-    // Handle window resize
+    // Make nodes responsive and reset overlaps when window size changes
     const handleResize = () => {
-      drawConnections();
+      if (containerRef.current) {
+        const width = containerRef.current.clientWidth;
+        const height = containerRef.current.clientHeight;
+        
+        // Resolve overlaps for current concept when window is resized
+        setConcepts(prevConcepts => {
+          const newConcepts = [...prevConcepts];
+          newConcepts[currentConceptIndex] = {
+            ...newConcepts[currentConceptIndex],
+            nodes: resolveOverlap([...newConcepts[currentConceptIndex].nodes], width, height)
+          };
+          return newConcepts;
+        });
+        
+        drawConnections();
+      }
     };
     
     window.addEventListener('resize', handleResize);
@@ -536,95 +603,128 @@ const VisualizationPane = () => {
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [animationOffset, hoveredNode, draggedNode, currentConceptIndex]);
+  
+  // Ensure the graph redraws when container is resized (not just window)
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      if (containerRef.current) {
+        drawConnections();
+      }
+    });
+    
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+    
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
+  }, []);
 
   return (
-    <Container>
-      <HeaderSection>
-        <MainHeading>Alex's Understanding</MainHeading>
-        <SubHeading>Below is a visual representation of Alex's Understanding for each concept. Navigate concepts by selecting the arrow keys</SubHeading>
-      </HeaderSection>
-
-      <ConceptSection>
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-          <ConceptTitle>
-            {currentConcept.title}
-          </ConceptTitle>
-        </Box>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" sx={{ opacity: 0.85, minWidth: '60px' }}>
-            Progress:
+    <>
+      {isMobile ? (
+        <MobileMessage>
+          <MobileOffOutlined sx={{ fontSize: '3rem', mb: 2, opacity: 0.9 }} />
+          <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+            Visualization Unavailable
           </Typography>
-          <LinearProgress 
-            variant="determinate" 
-            value={currentConcept.progress} 
-            sx={{ 
-              height: 8, 
-              borderRadius: 4,
-              flex: 1,
-              backgroundColor: 'rgba(255, 255, 255, 0.3)',
-              '& .MuiLinearProgress-bar': {
-                backgroundColor: '#ffffff',
-              }
-            }} 
-          />
-          <Typography variant="body2" sx={{ fontWeight: 500, minWidth: '40px', textAlign: 'right' }}>
-            {currentConcept.progress}%
+          <Typography variant="body1" sx={{ opacity: 0.9, maxWidth: '400px', lineHeight: 1.6 }}>
+            Sorry, knowledge graph visualizations are not supported on mobile devices at this time.
           </Typography>
-        </Box>
-      </ConceptSection>
+        </MobileMessage>
+      ) : (
+        <Container>
+          <HeaderSection>
+            <MainHeading>Alex's Understanding</MainHeading>
+            <SubHeading>Below is a visual representation of Alex's Understanding for each concept. Navigate concepts by selecting the arrow keys</SubHeading>
+          </HeaderSection>
 
-      <GraphContainer ref={containerRef}>
-        <canvas ref={canvasRef} style={{ position: 'absolute', width: '100%', height: '100%' }} />
-        
-        {currentConcept.nodes.map(node => (
-          <NodeItem 
-            key={node.id}
-            isActive={node.isActive}
-            isDragging={draggedNode === node.id}
-            style={{
-              left: `${node.x}%`,
-              top: `${node.y}%`,
-            }}
-            onMouseEnter={() => setHoveredNode(node.id)}
-            onMouseLeave={() => setHoveredNode(null)}
-            onMouseDown={(e) => handleMouseDown(e, node.id)}
-          >
-            {node.label}
-          </NodeItem>
-        ))}
-      </GraphContainer>
-      
-      <NavigationControls>
-        <IconButton 
-          onClick={handlePrevConcept} 
-          sx={{ 
-            color: 'white',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            },
-          }}
-        >
-          <ArrowBackIcon />
-        </IconButton>
-        
-        <Typography variant="body2" sx={{ fontWeight: 500, minWidth: '45px', textAlign: 'center' }}>
-          {currentConceptIndex + 1} / {concepts.length}
-        </Typography>
-        
-        <IconButton 
-          onClick={handleNextConcept}
-          sx={{ 
-            color: 'white',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            },
-          }}
-        >
-          <ArrowForwardIcon />
-        </IconButton>
-      </NavigationControls>
-    </Container>
+          <ConceptSection>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+              <ConceptTitle>
+                {currentConcept.title}
+              </ConceptTitle>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" sx={{ opacity: 0.85, minWidth: '60px' }}>
+                Understanding:
+              </Typography>
+              <LinearProgress 
+                variant="determinate" 
+                value={currentConcept.progress} 
+                sx={{ 
+                  height: 8, 
+                  borderRadius: 4,
+                  flex: 1,
+                  backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                  '& .MuiLinearProgress-bar': {
+                    backgroundColor: '#ffffff',
+                  }
+                }} 
+              />
+              <Typography variant="body2" sx={{ fontWeight: 500, minWidth: '40px', textAlign: 'right' }}>
+                {currentConcept.progress}%
+              </Typography>
+            </Box>
+          </ConceptSection>
+
+          <GraphContainer ref={containerRef}>
+            <canvas ref={canvasRef} style={{ position: 'absolute', width: '100%', height: '100%' }} />
+            
+            {currentConcept.nodes.map(node => (
+              <NodeItem 
+                key={node.id}
+                isActive={node.isActive}
+                isDragging={draggedNode === node.id}
+                style={{
+                  left: `${node.x}%`,
+                  top: `${node.y}%`,
+                }}
+                onMouseEnter={() => setHoveredNode(node.id)}
+                onMouseLeave={() => setHoveredNode(null)}
+                onMouseDown={(e) => handleMouseDown(e, node.id)}
+              >
+                {node.label}
+              </NodeItem>
+            ))}
+          </GraphContainer>
+          
+          <NavigationControls>
+            <IconButton 
+              onClick={handlePrevConcept} 
+              sx={{ 
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+            
+            <Typography variant="body2" sx={{ fontWeight: 500, minWidth: '45px', textAlign: 'center' }}>
+              {currentConceptIndex + 1} / {concepts.length}
+            </Typography>
+            
+            <IconButton 
+              onClick={handleNextConcept}
+              sx={{ 
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              <ArrowForwardIcon />
+            </IconButton>
+          </NavigationControls>
+        </Container>
+      )}
+    </>
   );
 };
 
