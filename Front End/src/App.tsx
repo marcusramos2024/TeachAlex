@@ -21,6 +21,33 @@ const theme = createTheme({
       default: '#f5f5f5',
     },
   },
+  typography: {
+    fontFamily: 'Inter, system-ui, Avenir, Helvetica, Arial, sans-serif',
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          scrollbarWidth: 'thin',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+            height: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#f1f1f1',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#888',
+            borderRadius: '4px',
+            '&:hover': {
+              background: '#555',
+            },
+          },
+        },
+      },
+    },
+  },
 });
 
 const AppContainer = styled(Box)({
@@ -29,6 +56,7 @@ const AppContainer = styled(Box)({
   height: '100vh',
   width: '100vw',
   overflow: 'hidden',
+  backgroundColor: '#f9fafc',
 });
 
 const MainContent = styled(Box)({
@@ -40,12 +68,13 @@ const MainContent = styled(Box)({
 const LeftPanel = styled(Box)({
   flex: '0 0 40%',
   backgroundColor: '#2e79ea',
+  background: 'linear-gradient(135deg, #2776e6 0%, #1e59b0 100%)',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
   position: 'relative',
   overflow: 'hidden',
-  boxShadow: 'rgba(0, 0, 0, 0.17) 0px -23px 25px 0px inset, rgba(0, 0, 0, 0.15) 0px -36px 30px 0px inset, rgba(0, 0, 0, 0.1) 0px -79px 40px 0px inset, rgba(0, 0, 0, 0.06) 0px 2px 1px, rgba(0, 0, 0, 0.09) 0px 4px 2px, rgba(0, 0, 0, 0.09) 0px 8px 4px, rgba(0, 0, 0, 0.09) 0px 16px 8px, rgba(0, 0, 0, 0.09) 0px 32px 16px',
+  boxShadow: 'rgba(0, 0, 0, 0.1) 0px 4px 12px, rgba(0, 0, 0, 0.05) 0px 1px 3px',
 });
 
 const RightPanel = styled(Box)({
@@ -53,17 +82,28 @@ const RightPanel = styled(Box)({
   display: 'flex',
   flexDirection: 'column',
   height: '100%',
+  boxShadow: 'inset 4px 0 8px -4px rgba(0, 0, 0, 0.1)',
+  backgroundColor: '#f0f4f8',
 });
 
 function App() {
   return (
     <ThemeProvider theme={theme}>     
-    <SpeedInsights />
       <CssBaseline />
+      <SpeedInsights />
       <Router>
         <Routes>
           <Route path="/" element={
-            <Box sx={{ width: '100%', height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Box sx={{ 
+              width: '100%', 
+              height: '100vh', 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              backgroundColor: '#f9fafc',
+              backgroundImage: 'radial-gradient(circle at 25px 25px, #f0f4ff 2%, transparent 0%), radial-gradient(circle at 75px 75px, #f0f4ff 2%, transparent 0%)',
+              backgroundSize: '100px 100px'
+            }}>
               <PDFUpload />
             </Box>
           } />

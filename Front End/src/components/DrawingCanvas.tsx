@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, IconButton, Paper, styled, Slider, Tooltip, Popover } from '@mui/material';
+import { Box, IconButton, Paper, styled, Slider, Tooltip, Popover, Typography } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faPaintBrush,
@@ -17,40 +17,55 @@ interface DrawingCanvasProps {
 }
 
 const CanvasContainer = styled(Paper)({
-  padding: '10px',
-  margin: '10px 0',
+  padding: '16px',
+  margin: '0',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: '10px',
+  gap: '16px',
+  borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+  backgroundColor: '#ffffff',
+  boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.03)',
+  borderRadius: '0',
+});
+
+const CanvasHeader = styled(Box)({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  width: '100%',
+  marginBottom: '8px',
 });
 
 const Toolbar = styled(Box)({
   display: 'flex',
-  gap: '10px',
-  padding: '10px',
-  backgroundColor: '#f5f5f5',
-  borderRadius: '8px',
+  gap: '12px',
+  padding: '12px 16px',
+  backgroundColor: '#f5f7fa',
+  borderRadius: '10px',
   width: '100%',
   justifyContent: 'space-between',
   alignItems: 'center',
+  boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.05)',
 });
 
 const ToolGroup = styled(Box)({
   display: 'flex',
-  gap: '10px',
+  gap: '8px',
   alignItems: 'center',
 });
 
 const Canvas = styled('canvas')({
-  border: '1px solid #ccc',
+  border: '1px solid rgba(0, 0, 0, 0.08)',
   borderRadius: '8px',
   cursor: 'crosshair',
+  backgroundColor: '#ffffff',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
 });
 
 const ColorPicker = styled('input')({
-  width: '40px',
-  height: '40px',
+  width: '32px',
+  height: '32px',
   padding: '0',
   border: 'none',
   borderRadius: '50%',
@@ -61,22 +76,67 @@ const ColorPicker = styled('input')({
   '&::-webkit-color-swatch': {
     border: 'none',
     borderRadius: '50%',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
   },
 });
 
 const ColorPopover = styled(Popover)({
   '& .MuiPopover-paper': {
-    padding: '10px',
+    padding: '16px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '10px',
+    gap: '12px',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+    borderRadius: '12px',
   },
 });
 
 const SizePopover = styled(Popover)({
   '& .MuiPopover-paper': {
-    padding: '10px',
-    width: '200px',
+    padding: '16px',
+    width: '240px',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+    borderRadius: '12px',
+  },
+});
+
+const ToolButton = styled(IconButton)(({ active }: { active?: boolean }) => ({
+  backgroundColor: active ? '#e7f0ff' : '#f5f7fa',
+  color: active ? '#2466cc' : '#5f6368',
+  padding: '8px',
+  borderRadius: '8px',
+  '&:hover': {
+    backgroundColor: active ? '#d4e4ff' : '#e8eaed',
+  },
+}));
+
+const ActionButton = styled(IconButton)<{ isSubmit?: boolean }>(({ isSubmit }) => ({
+  borderRadius: '8px',
+  padding: '8px 16px',
+  backgroundColor: isSubmit ? '#2466cc' : '#f5f7fa',
+  color: isSubmit ? '#ffffff' : '#5f6368',
+  '&:hover': {
+    backgroundColor: isSubmit ? '#1a4fa0' : '#e8eaed',
+  },
+}));
+
+const StyledSlider = styled(Slider)({
+  color: '#2466cc',
+  height: 8,
+  '& .MuiSlider-track': {
+    border: 'none',
+  },
+  '& .MuiSlider-thumb': {
+    height: 18,
+    width: 18,
+    backgroundColor: '#fff',
+    border: '2px solid currentColor',
+    '&:focus, &:hover, &.Mui-active, &.Mui-focusVisible': {
+      boxShadow: '0 0 0 8px rgba(36, 102, 204, 0.16)',
+    },
+    '&:before': {
+      display: 'none',
+    },
   },
 });
 
@@ -86,8 +146,8 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
   const [lastX, setLastX] = useState(0);
   const [lastY, setLastY] = useState(0);
-  const [color, setColor] = useState('#000000');
-  const [brushSize, setBrushSize] = useState(2);
+  const [color, setColor] = useState('#2466cc');
+  const [brushSize, setBrushSize] = useState(3);
   const [isEraser, setIsEraser] = useState(false);
   const [colorAnchorEl, setColorAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [sizeAnchorEl, setSizeAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -100,8 +160,12 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
     if (!ctx) return;
 
     // Set canvas size
-    canvas.width = 500;
-    canvas.height = 300;
+    canvas.width = 600;
+    canvas.height = 350;
+
+    // Fill with white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Set drawing styles
     ctx.strokeStyle = color;
@@ -165,7 +229,9 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
     const ctx = context;
     if (!canvas || !ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Clear canvas with white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   };
 
   const handleSave = () => {
@@ -180,6 +246,7 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = e.target.value;
     setColor(newColor);
+    handleColorClose();
   };
 
   const handleBrushSizeChange = (_: Event, value: number | number[]) => {
@@ -206,99 +273,76 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
   const colorOpen = Boolean(colorAnchorEl);
   const sizeOpen = Boolean(sizeAnchorEl);
 
+  // Color presets
+  const colorPresets = [
+    '#2466cc', // Blue
+    '#14ae5c', // Green
+    '#d93025', // Red
+    '#9334e6', // Purple
+    '#ff6d01', // Orange
+    '#000000', // Black
+  ];
+
   return (
-    <CanvasContainer elevation={2}>
+    <CanvasContainer elevation={0}>
+      <CanvasHeader>
+        <Typography variant="h6" sx={{ fontWeight: 500 }}>
+          Drawing Canvas
+        </Typography>
+      </CanvasHeader>
+      
       <Toolbar>
         <ToolGroup>
-          <Tooltip title="Clear Canvas">
-            <IconButton onClick={clearCanvas} color="error">
-              <FontAwesomeIcon icon={faTrash} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Color">
-            <IconButton onClick={handleColorClick}>
-              <FontAwesomeIcon icon={faPalette} style={{ color: color }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Brush Size">
-            <IconButton onClick={handleSizeClick}>
-              <FontAwesomeIcon icon={faTextHeight} />
-            </IconButton>
-          </Tooltip>
           <Tooltip title="Brush">
-            <IconButton 
+            <ToolButton 
               onClick={() => setIsEraser(false)}
-              color={!isEraser ? "primary" : "default"}
+              active={!isEraser}
+              size="small"
             >
               <FontAwesomeIcon icon={faPaintBrush} />
-            </IconButton>
+            </ToolButton>
           </Tooltip>
           <Tooltip title="Eraser">
-            <IconButton 
-              onClick={() => setIsEraser(!isEraser)} 
-              color={isEraser ? "primary" : "default"}
+            <ToolButton 
+              onClick={() => setIsEraser(true)} 
+              active={isEraser}
+              size="small"
             >
               <FontAwesomeIcon icon={faEraser} />
-            </IconButton>
+            </ToolButton>
+          </Tooltip>
+          <Tooltip title="Color">
+            <ToolButton onClick={handleColorClick} size="small">
+              <FontAwesomeIcon icon={faPalette} style={{ color: isEraser ? '#5f6368' : color }} />
+            </ToolButton>
+          </Tooltip>
+          <Tooltip title="Brush Size">
+            <ToolButton onClick={handleSizeClick} size="small">
+              <FontAwesomeIcon icon={faTextHeight} />
+            </ToolButton>
+          </Tooltip>
+          <Tooltip title="Clear Canvas">
+            <ToolButton onClick={clearCanvas} size="small">
+              <FontAwesomeIcon icon={faTrash} />
+            </ToolButton>
           </Tooltip>
         </ToolGroup>
+        
         <ToolGroup>
           <Tooltip title="Cancel">
-            <IconButton onClick={onCancel} color="error">
+            <ActionButton onClick={onCancel} size="small">
               <FontAwesomeIcon icon={faTimes} />
-            </IconButton>
+              <Typography sx={{ ml: 1, fontSize: '0.875rem' }}>Cancel</Typography>
+            </ActionButton>
           </Tooltip>
           <Tooltip title="Send Drawing">
-            <IconButton onClick={handleSave} color="primary">
+            <ActionButton onClick={handleSave} isSubmit size="small">
               <FontAwesomeIcon icon={faPaperPlane} />
-            </IconButton>
+              <Typography sx={{ ml: 1, fontSize: '0.875rem' }}>Send</Typography>
+            </ActionButton>
           </Tooltip>
         </ToolGroup>
       </Toolbar>
-
-      <ColorPopover
-        open={colorOpen}
-        anchorEl={colorAnchorEl}
-        onClose={handleColorClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-      >
-        <ColorPicker
-          type="color"
-          value={color}
-          onChange={handleColorChange}
-        />
-      </ColorPopover>
-
-      <SizePopover
-        open={sizeOpen}
-        anchorEl={sizeAnchorEl}
-        onClose={handleSizeClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-      >
-        <Slider
-          value={brushSize}
-          onChange={handleBrushSizeChange}
-          min={1}
-          max={20}
-          valueLabelDisplay="auto"
-          orientation="vertical"
-          sx={{ height: '150px', margin: '10px auto' }}
-        />
-      </SizePopover>
 
       <Canvas
         ref={canvasRef}
@@ -307,6 +351,94 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
         onMouseUp={stopDrawing}
         onMouseOut={stopDrawing}
       />
+
+      <ColorPopover
+        open={colorOpen}
+        anchorEl={colorAnchorEl}
+        onClose={handleColorClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+          Select Color
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {colorPresets.map((presetColor) => (
+            <Box
+              key={presetColor}
+              onClick={() => {
+                setColor(presetColor);
+                handleColorClose();
+              }}
+              sx={{
+                width: 32,
+                height: 32,
+                backgroundColor: presetColor,
+                borderRadius: '50%',
+                cursor: 'pointer',
+                border: color === presetColor ? '2px solid #2466cc' : '2px solid transparent',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
+                '&:hover': {
+                  transform: 'scale(1.1)',
+                },
+                transition: 'transform 0.2s',
+              }}
+            />
+          ))}
+        </Box>
+        <Box sx={{ mt: 1, textAlign: 'center' }}>
+          <Typography variant="caption" sx={{ mb: 1, display: 'block' }}>
+            Custom Color
+          </Typography>
+          <ColorPicker
+            type="color"
+            value={color}
+            onChange={handleColorChange}
+          />
+        </Box>
+      </ColorPopover>
+
+      <SizePopover
+        open={sizeOpen}
+        anchorEl={sizeAnchorEl}
+        onClose={handleSizeClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+          Brush Size: {brushSize}px
+        </Typography>
+        <StyledSlider
+          value={brushSize}
+          onChange={handleBrushSizeChange}
+          min={1}
+          max={20}
+          onChangeCommitted={handleSizeClose}
+        />
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          mt: 1,
+          fontSize: '0.75rem',
+          color: '#5f6368'
+        }}>
+          <span>Fine</span>
+          <span>Medium</span>
+          <span>Thick</span>
+        </Box>
+      </SizePopover>
     </CanvasContainer>
   );
 };
