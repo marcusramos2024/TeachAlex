@@ -166,7 +166,7 @@ export const MobileMessage = styled(Box)({
   borderRadius: '12px',
 });
 
-export const CollapseButton = styled(IconButton)<{ isCollapsed?: boolean }>(({ theme, isCollapsed }) => ({
+export const CollapseButton = styled(IconButton)<{ isCollapsed?: boolean }>(({isCollapsed }) => ({
   position: 'absolute',
   bottom: '30px',
   right: isCollapsed ? '50%' : '22px',

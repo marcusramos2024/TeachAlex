@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Box, Paper, TextField, IconButton, styled, Tooltip, Typography, Badge } from '@mui/material';
+import { Box, Paper, TextField, IconButton, styled, Tooltip, Typography } from '@mui/material';
 import { Send as SendIcon, Brush as BrushIcon, Close as CloseIcon } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import DrawingCanvas from './DrawingCanvas';
