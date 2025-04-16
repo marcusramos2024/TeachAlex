@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Box, Paper, TextField, IconButton, styled, Tooltip, Typography } from '@mui/material';
-import { Send as SendIcon, Brush as BrushIcon } from '@mui/icons-material';
+import { Box, Paper, TextField, IconButton, styled, Tooltip, Typography, Badge } from '@mui/material';
+import { Send as SendIcon, Brush as BrushIcon, Close as CloseIcon } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import DrawingCanvas from './DrawingCanvas';
 import { Message } from '../types';
@@ -143,6 +143,15 @@ const DateText = styled(Typography)({
   fontWeight: 500,
 });
 
+const DrawingPreview = styled('img')({
+  maxWidth: '80px',
+  height: '40px',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  border: '1px solid rgba(0, 0, 0, 0.1)',
+  marginRight: '8px',
+});
+
 const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -162,6 +171,7 @@ const ChatInterface = () => {
   const [inputText, setInputText] = useState('');
   const [showDrawingCanvas, setShowDrawingCanvas] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [currentDrawing, setCurrentDrawing] = useState<string | null>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -171,17 +181,45 @@ const ChatInterface = () => {
   }, [messages, isTyping]);
 
   const handleSendMessage = async () => {
-    if (!inputText.trim() || isTyping) return;
+    if ((!inputText.trim() && !currentDrawing) || isTyping) return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: inputText,
-      isUser: true,
-      timestamp: new Date(),
-    };
+    // If we have both drawing and text, send them as separate messages
+    if (currentDrawing && inputText.trim()) {
+      // First send the drawing message
+      const drawingMessage: Message = {
+        id: Date.now().toString(),
+        text: "",
+        isUser: true,
+        timestamp: new Date(),
+        drawing: currentDrawing,
+      };
+      
+      setMessages(prev => [...prev, drawingMessage]);
+      
+      // Then send the text message
+      const textMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: inputText,
+        isUser: true,
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, textMessage]);
+    } else {
+      // If we only have one of them, send as a single message
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        text: inputText || "Here's my drawing:",
+        isUser: true,
+        timestamp: new Date(),
+        drawing: currentDrawing || undefined,
+      };
 
-    setMessages(prev => [...prev, newMessage]);
+      setMessages(prev => [...prev, newMessage]);
+    }
+    
     setInputText('');
+    setCurrentDrawing(null);
     setIsTyping(true);
 
     // Simulate AI response delay
@@ -190,7 +228,9 @@ const ChatInterface = () => {
     // Generate AI response
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
-      text: "I'm here to help you learn! What concepts would you like me to explain? I can break down complex topics into simpler terms.",
+      text: currentDrawing 
+        ? "That's a great visual explanation! I understand your question better now. Let me help clarify this concept for you."
+        : "I'm here to help you learn! What concepts would you like me to explain? I can break down complex topics into simpler terms.",
       isUser: false,
       timestamp: new Date(),
     };
@@ -208,33 +248,16 @@ const ChatInterface = () => {
   };
 
   const handleDrawingComplete = (dataUrl: string) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: 'Here\'s my drawing to help explain my question:',
-      isUser: true,
-      timestamp: new Date(),
-      drawing: dataUrl,
-    };
-
-    setMessages(prev => [...prev, newMessage]);
+    setCurrentDrawing(dataUrl);
     setShowDrawingCanvas(false);
-    setIsTyping(true);
-
-    // Simulate AI response delay
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "That's a great visual explanation! I understand your question better now. Let me help clarify this concept for you.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 2000);
   };
 
   const handleDrawingCancel = () => {
     setShowDrawingCanvas(false);
+  };
+
+  const clearDrawing = () => {
+    setCurrentDrawing(null);
   };
 
   // Format date for message groups
@@ -346,6 +369,18 @@ const ChatInterface = () => {
         />
       ) : (
         <InputContainer elevation={0}>
+          {currentDrawing && (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <DrawingPreview src={currentDrawing} alt="Your drawing" />
+              <IconButton 
+                size="small" 
+                onClick={clearDrawing}
+                sx={{ marginRight: 1 }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          )}
           <StyledTextField
             fullWidth
             multiline
@@ -353,7 +388,7 @@ const ChatInterface = () => {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
+            placeholder={currentDrawing ? "Add text to your drawing (optional)..." : "Type your message..."}
             variant="outlined"
             size="small"
             disabled={isTyping}
@@ -370,14 +405,14 @@ const ChatInterface = () => {
           <Tooltip title="Send">
             <ActionButton 
               onClick={handleSendMessage}
-              disabled={!inputText.trim() || isTyping}
+              disabled={(!inputText.trim() && !currentDrawing) || isTyping}
               color="primary"
               size="medium"
               sx={{
-                backgroundColor: !inputText.trim() || isTyping ? '#f5f7fa' : '#e7f0ff',
-                color: !inputText.trim() || isTyping ? '#bdc1c6' : '#2466cc',
+                backgroundColor: (!inputText.trim() && !currentDrawing) || isTyping ? '#f5f7fa' : '#e7f0ff',
+                color: (!inputText.trim() && !currentDrawing) || isTyping ? '#bdc1c6' : '#2466cc',
                 '&:hover': {
-                  backgroundColor: !inputText.trim() || isTyping ? '#f5f7fa' : '#d4e4ff',
+                  backgroundColor: (!inputText.trim() && !currentDrawing) || isTyping ? '#f5f7fa' : '#d4e4ff',
                 }
               }}
             >

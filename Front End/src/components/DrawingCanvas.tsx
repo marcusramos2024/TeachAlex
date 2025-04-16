@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, IconButton, Paper, styled, Slider, Tooltip, Typography, Button, Fade } from '@mui/material';
 import BrushIcon from '@mui/icons-material/Brush';
-import FormatColorFillIcon from '@mui/icons-material/FormatColorFill';
+import EraseIcon from '@mui/icons-material/BackspaceOutlined';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import PaletteIcon from '@mui/icons-material/Palette';
@@ -55,55 +55,38 @@ const CanvasContainer = styled(Paper)({
 
 const CanvasHeader = styled(Box)({
   display: 'flex',
-  justifyContent: 'space-between',
+  justifyContent: 'flex-end',
   alignItems: 'center',
   width: '100%',
   marginBottom: '4px',
 });
 
-const CanvasTitle = styled(Typography)({
-  fontFamily: 'Montserrat, sans-serif',
-  fontWeight: 600,
-  fontSize: '1.25rem',
-  color: '#333',
-});
-
-const Toolbar = styled(motion.div)({
-  display: 'flex',
-  gap: '8px',
-  padding: '12px 16px',
-  backgroundColor: '#f5f7fa',
-  borderRadius: '12px',
-  width: '100%',
-  justifyContent: 'center',
-  alignItems: 'center',
-  boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.05)',
-  overflowX: 'auto',
-  '&::-webkit-scrollbar': {
-    height: '4px',
-  },
-  '&::-webkit-scrollbar-track': {
-    background: 'transparent',
-  },
-  '&::-webkit-scrollbar-thumb': {
-    background: '#dadce0',
-    borderRadius: '4px',
-  },
-});
-
-const ToolGroup = styled(Box)({
-  display: 'flex',
-  gap: '8px',
-  alignItems: 'center',
-});
-
 const Canvas = styled('canvas')({
   borderRadius: '12px',
-  cursor: 'crosshair',
   backgroundColor: '#ffffff',
   boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
   border: '1px solid rgba(0, 0, 0, 0.08)',
+  width: '100%',
   maxWidth: '100%',
+});
+
+const DrawingArea = styled(Box)({
+  display: 'flex',
+  width: '100%',
+  gap: '12px',
+  alignItems: 'flex-start',
+});
+
+const VerticalToolbar = styled(motion.div)({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+  padding: '12px',
+  backgroundColor: '#f5f7fa',
+  borderRadius: '12px',
+  justifyContent: 'center',
+  alignItems: 'center',
+  boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.06)',
 });
 
 const ColorButton = styled(Box)<{ isSelected: boolean; color: string }>(({ isSelected, color }) => ({
@@ -204,6 +187,15 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [canvasEmpty, setCanvasEmpty] = useState(true);
 
+  // Custom brush cursor styles based on state
+  const getCursorStyle = () => {
+    if (isEraser) {
+      return `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${brushSize * 2 + 8}' height='${brushSize * 2 + 8}' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 20H7L3 16c-.8-.8-.8-2 0-2.8L13.8 2.4c.8-.8 2-.8 2.8 0L20 6c.8.8.8 2 0 2.8L8 20'/%3E%3C/svg%3E") ${brushSize + 4} ${brushSize + 4}, auto`;
+    } else {
+      return `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${brushSize * 2 + 8}' height='${brushSize * 2 + 8}' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='12' cy='12' r='${brushSize}' fill='${encodeURIComponent(color)}' opacity='0.6'/%3E%3Ccircle cx='12' cy='12' r='${brushSize}' stroke='%23000000' stroke-width='1' opacity='0.8'/%3E%3C/svg%3E") ${brushSize + 4} ${brushSize + 4}, auto`;
+    }
+  };
+
   // Initialize canvas
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -212,15 +204,11 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
-    // Set canvas size
-    const parentWidth = canvas.parentElement?.clientWidth || 600;
-    const height = Math.min(350, window.innerHeight * 0.4);
-    canvas.width = Math.min(600, parentWidth - 40);
-    canvas.height = height;
+    // Set initial canvas size
+    updateCanvasSize();
 
-    // Fill with white background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Add window resize listener to make canvas responsive
+    window.addEventListener('resize', updateCanvasSize);
 
     // Set drawing styles
     ctx.strokeStyle = color;
@@ -232,7 +220,48 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
     
     // Save initial state for undo
     saveState();
+
+    // Cleanup resize listener on unmount
+    return () => {
+      window.removeEventListener('resize', updateCanvasSize);
+    };
   }, []); 
+
+  // Function to update canvas size on window resize
+  const updateCanvasSize = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const parentWidth = canvas.parentElement?.clientWidth || 600;
+    const height = Math.min(350, window.innerHeight * 0.4);
+    canvas.width = Math.min(900, parentWidth - 70); // Adjusted for vertical toolbar, with a maximum width
+    canvas.height = height;
+
+    // Redraw content if context exists
+    if (context) {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      if (tempCtx && undoStack.length > 0) {
+        const img = new Image();
+        img.onload = () => {
+          context.fillStyle = '#ffffff';
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          context.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+        img.src = undoStack[undoStack.length - 1];
+      }
+    } else {
+      // If no context, fill with white
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+  };
 
   // Update drawing styles when they change
   useEffect(() => {
@@ -430,30 +459,18 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
   return (
     <CanvasContainer elevation={3}>
       <CanvasHeader>
-        <CanvasTitle>Draw Your Idea</CanvasTitle>
         <IconButton onClick={onCancel} size="small">
           <CloseIcon />
         </IconButton>
       </CanvasHeader>
 
-      <Canvas
-        ref={canvasRef}
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseOut={stopDrawing}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      />
-
-      <Toolbar
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <ToolGroup>
-          <Tooltip title="Brush">
+      <DrawingArea>
+        <VerticalToolbar
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Tooltip title="Brush" placement="right">
             <ToolButton
               active={!isEraser}
               onClick={handleBrushClick}
@@ -462,44 +479,7 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
             </ToolButton>
           </Tooltip>
           
-          <Tooltip title="Eraser">
-            <ToolButton
-              active={isEraser}
-              onClick={handleEraserClick}
-            >
-              <FormatColorFillIcon />
-            </ToolButton>
-          </Tooltip>
-          
-          <Tooltip title="Undo">
-            <span>
-              <ToolButton
-                onClick={handleUndo}
-                disabled={undoStack.length <= 1}
-                sx={{ opacity: undoStack.length <= 1 ? 0.5 : 1 }}
-              >
-                <UndoIcon />
-              </ToolButton>
-            </span>
-          </Tooltip>
-          
-          <Tooltip title="Clear">
-            <span>
-              <ToolButton
-                onClick={clearCanvas}
-                disabled={canvasEmpty}
-                sx={{ opacity: canvasEmpty ? 0.5 : 1 }}
-              >
-                <DeleteIcon />
-              </ToolButton>
-            </span>
-          </Tooltip>
-        </ToolGroup>
-        
-        <Box sx={{ width: 16 }} /> {/* Spacer */}
-        
-        <ToolGroup>
-          <Tooltip title="Color">
+          <Tooltip title="Color" placement="right">
             <ToolButton 
               onClick={toggleColorPalette}
               sx={{ 
@@ -511,15 +491,62 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
             </ToolButton>
           </Tooltip>
           
-          <Tooltip title="Brush Size">
+          <Tooltip title="Brush Size" placement="right">
             <ToolButton 
               onClick={toggleSizeSlider}
             >
               <LineWeightIcon />
             </ToolButton>
           </Tooltip>
-        </ToolGroup>
-      </Toolbar>
+          
+          <Tooltip title="Eraser" placement="right">
+            <ToolButton
+              active={isEraser}
+              onClick={handleEraserClick}
+            >
+              <EraseIcon />
+            </ToolButton>
+          </Tooltip>
+          
+          <Box sx={{ height: 16 }} /> {/* Spacer */}
+          
+          <Tooltip title="Undo" placement="right">
+            <span>
+              <ToolButton
+                onClick={handleUndo}
+                disabled={undoStack.length <= 1}
+                sx={{ opacity: undoStack.length <= 1 ? 0.5 : 1 }}
+              >
+                <UndoIcon />
+              </ToolButton>
+            </span>
+          </Tooltip>
+          
+          <Tooltip title="Clear" placement="right">
+            <span>
+              <ToolButton
+                onClick={clearCanvas}
+                disabled={canvasEmpty}
+                sx={{ opacity: canvasEmpty ? 0.5 : 1 }}
+              >
+                <DeleteIcon />
+              </ToolButton>
+            </span>
+          </Tooltip>
+        </VerticalToolbar>
+
+        <Canvas
+          ref={canvasRef}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseOut={stopDrawing}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{ cursor: getCursorStyle() }}
+        />
+      </DrawingArea>
 
       {/* Color palette */}
       <Fade in={showColorPalette}>
@@ -588,7 +615,7 @@ const DrawingCanvas = ({ onDrawingComplete, onCancel }: DrawingCanvasProps) => {
           startIcon={<SendIcon />}
           endIcon={<CheckCircleOutlineIcon />}
         >
-          Send Drawing
+          Save Drawing
         </ActionButton>
       </ControlsBar>
     </CanvasContainer>
