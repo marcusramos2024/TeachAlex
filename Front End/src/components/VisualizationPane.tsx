@@ -8,7 +8,6 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { VisualizationPaneProps, Node } from './visualization/types';
 import { Container, CollapseButton } from './visualization/StyledComponents';
 import { initialConcepts } from './visualization/conceptData';
-import { resolveOverlap } from './visualization/graphUtils';
 import Header from './visualization/Header';
 import ConceptDisplay from './visualization/ConceptDisplay';
 import Graph from './visualization/Graph';
@@ -24,36 +23,7 @@ const VisualizationPane = ({ onToggleCollapse, isCollapsed = false }: Visualizat
 
   // Current concept data
   const currentConcept = concepts[currentConceptIndex];
-  
-  // Ensure nodes don't overlap initially
-  useEffect(() => {
-    if (!isMobile && !isCollapsed) {
-      // Resolve overlaps for each concept when window is resized
-      const handleResize = () => {
-        const container = document.querySelector('[class*="GraphContainer"]');
-        if (container) {
-          const width = container.clientWidth;
-          const height = container.clientHeight;
-          
-          setConcepts(prevConcepts => 
-            prevConcepts.map(concept => ({
-              ...concept,
-              nodes: resolveOverlap([...concept.nodes], width, height)
-            }))
-          );
-        }
-      };
-      
-      // Initial resolution
-      handleResize();
-      
-      window.addEventListener('resize', handleResize);
-      return () => {
-        window.removeEventListener('resize', handleResize);
-      };
-    }
-  }, [isMobile, isCollapsed]);
-  
+
   // Navigate to next concept
   const handleNextConcept = () => {
     setCurrentConceptIndex((prev) => (prev + 1) % concepts.length);
@@ -76,54 +46,56 @@ const VisualizationPane = ({ onToggleCollapse, isCollapsed = false }: Visualizat
     });
   };
 
+  // Display mobile view on smaller screens
+  if (isMobile) {
+    return (
+      <Container>
+        <MobileView
+          concept={currentConcept}
+          onPrev={handlePrevConcept}
+          onNext={handleNextConcept}
+          currentIndex={currentConceptIndex}
+          totalConcepts={concepts.length}
+        />
+      </Container>
+    );
+  }
+  
+  // Display collapsed view when visualizer is collapsed
+  if (isCollapsed) {
+    return (
+      <Container>
+        <Tooltip title="Expand visualization pane" placement="left">
+          <CollapseButton onClick={onToggleCollapse}>
+            <ChevronLeftIcon />
+          </CollapseButton>
+        </Tooltip>
+        <CollapsedView />
+      </Container>
+    );
+  }
+
   return (
-    <>
-      {isMobile && !isCollapsed ? (
-        <Container isCollapsed={false}>
-          {/* Show visualization unavailable message when expanded on mobile */}
-          <Tooltip title="Collapse panel" placement="top">
-            <CollapseButton onClick={onToggleCollapse} isCollapsed={false}>
-              <ChevronLeftIcon />
-            </CollapseButton>
-          </Tooltip>
-          
-          <MobileView />
-        </Container>
-      ) : (
-        <Container isCollapsed={isCollapsed}>
-          {/* Move the collapse button to the bottom of the container */}
-          <Tooltip title={isCollapsed ? "Expand panel" : "Collapse panel"} placement="top">
-            <CollapseButton onClick={onToggleCollapse} isCollapsed={isCollapsed}>
-              {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-            </CollapseButton>
-          </Tooltip>
-
-          {!isCollapsed && !isMobile && (
-            <>
-              <Header />
-              
-              <ConceptDisplay concept={currentConcept} />
-              
-              <Graph 
-                nodes={currentConcept.nodes}
-                connections={currentConcept.connections} 
-                currentConceptIndex={currentConceptIndex}
-                updateNodePositions={updateNodePositions}
-              />
-              
-              <ConceptNavigation 
-                currentIndex={currentConceptIndex}
-                totalConcepts={concepts.length}
-                onPrev={handlePrevConcept}
-                onNext={handleNextConcept}
-              />
-            </>
-          )}
-
-          {isCollapsed && <CollapsedView />}
-        </Container>
-      )}
-    </>
+    <Container>
+      <Tooltip title="Collapse visualization pane" placement="left">
+        <CollapseButton onClick={onToggleCollapse}>
+          <ChevronRightIcon />
+        </CollapseButton>
+      </Tooltip>
+      <Header />
+      <ConceptDisplay concept={currentConcept} />
+      <Graph 
+        nodes={currentConcept.nodes} 
+        currentConceptIndex={currentConceptIndex}
+        updateNodePositions={updateNodePositions} 
+      />
+      <ConceptNavigation 
+        currentIndex={currentConceptIndex}
+        totalConcepts={concepts.length}
+        onPrev={handlePrevConcept}
+        onNext={handleNextConcept}
+      />
+    </Container>
   );
 };
 

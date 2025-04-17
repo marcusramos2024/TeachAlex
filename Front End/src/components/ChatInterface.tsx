@@ -4,6 +4,7 @@ import { Send as SendIcon, Brush as BrushIcon, Close as CloseIcon } from '@mui/i
 import { motion, AnimatePresence } from 'framer-motion';
 import DrawingCanvas from './DrawingCanvas';
 import { Message } from '../types';
+import apiService from '../services/api';
 
 const ChatContainer = styled(Box)({
   display: 'flex',
@@ -205,6 +206,36 @@ const ChatInterface = () => {
       };
       
       setMessages(prev => [...prev, textMessage]);
+      
+      // Send to backend
+      try {
+        setIsTyping(true);
+        const response = await apiService.sendMessage(inputText, currentDrawing);
+        
+        // Add AI response
+        const aiMessage: Message = {
+          id: (Date.now() + 2).toString(),
+          text: response.response || "Sorry, I couldn't process your request.", 
+          isUser: false,
+          timestamp: new Date(),
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+      } catch (error) {
+        console.error('Error sending message to backend:', error);
+        
+        // Add error message
+        const errorMessage: Message = {
+          id: (Date.now() + 2).toString(),
+          text: "Sorry, there was an error communicating with the server.", 
+          isUser: false,
+          timestamp: new Date(),
+        };
+        
+        setMessages(prev => [...prev, errorMessage]);
+      } finally {
+        setIsTyping(false);
+      }
     } else {
       // If we only have one of them, send as a single message
       const newMessage: Message = {
@@ -216,28 +247,43 @@ const ChatInterface = () => {
       };
 
       setMessages(prev => [...prev, newMessage]);
+      
+      // Send to backend
+      try {
+        setIsTyping(true);
+        const response = await apiService.sendMessage(
+          inputText || "Here's my drawing:", 
+          currentDrawing
+        );
+        
+        // Add AI response
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: response.response || "Sorry, I couldn't process your request.", 
+          isUser: false,
+          timestamp: new Date(),
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+      } catch (error) {
+        console.error('Error sending message to backend:', error);
+        
+        // Add error message
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: "Sorry, there was an error communicating with the server.", 
+          isUser: false,
+          timestamp: new Date(),
+        };
+        
+        setMessages(prev => [...prev, errorMessage]);
+      } finally {
+        setIsTyping(false);
+      }
     }
     
     setInputText('');
     setCurrentDrawing(null);
-    setIsTyping(true);
-
-    // Simulate AI response delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Generate AI response
-    const aiMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      text: currentDrawing 
-        ? "That's a great visual explanation! I understand your question better now. Let me help clarify this concept for you."
-        : "I'm here to help you learn! What concepts would you like me to explain? I can break down complex topics into simpler terms.",
-      isUser: false,
-      timestamp: new Date(),
-    };
-
-    // Add the message to the chat
-    setMessages(prev => [...prev, aiMessage]);
-    setIsTyping(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

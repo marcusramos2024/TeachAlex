@@ -4,6 +4,7 @@ import { NodeItem } from './StyledComponents';
 
 interface NodeComponentProps {
   node: Node;
+  position: { x: number, y: number };
   isDragging: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
@@ -12,6 +13,7 @@ interface NodeComponentProps {
 
 const NodeComponent = ({ 
   node, 
+  position,
   isDragging, 
   onMouseEnter, 
   onMouseLeave, 
@@ -20,11 +22,10 @@ const NodeComponent = ({
   return (
     <NodeItem
       key={node.id}
-      isActive={node.isActive}
       isDragging={isDragging}
       style={{
-        left: `${node.x}%`,
-        top: `${node.y}%`,
+        left: `${position.x * 100}%`,
+        top: `${position.y * 100}%`,
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}

@@ -3,23 +3,62 @@ import { Node } from './types';
 import { GraphContainer } from './StyledComponents';
 import GraphCanvas from './GraphCanvas';
 import NodeComponent from './NodeComponent';
-import { resolveOverlap } from './graphUtils';
 import { Box, Typography } from '@mui/material';
 
 interface GraphProps {
   nodes: Node[];
-  connections: { source: number; target: number }[];
   currentConceptIndex: number;
   updateNodePositions: (nodes: Node[]) => void;
 }
 
-const Graph = ({ nodes, connections, currentConceptIndex, updateNodePositions }: GraphProps) => {
+const Graph = ({ nodes, currentConceptIndex, updateNodePositions }: GraphProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
   const [hoveredNode, setHoveredNode] = useState<number | null>(null);
   const [draggedNode, setDraggedNode] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [animationOffset, setAnimationOffset] = useState(0);
+  const [nodePositions, setNodePositions] = useState<Map<number, { x: number, y: number }>>(new Map());
+
+  // Initialize node positions when nodes change
+  useEffect(() => {
+    if (nodes.length === 0) {
+      setNodePositions(new Map());
+      return;
+    }
+
+    // Generate initial positions in a circular layout
+    const newPositions = new Map<number, { x: number, y: number }>();
+    const centerX = 0.5; // Center of container
+    const centerY = 0.5;
+    const radius = 0.3; // Radius for the circle
+
+    nodes.forEach((node, index) => {
+      // If node already has a position, keep it
+      if (nodePositions.has(node.id)) {
+        newPositions.set(node.id, nodePositions.get(node.id)!);
+        return;
+      }
+      
+      // Otherwise calculate a position
+      const angle = (index / nodes.length) * 2 * Math.PI;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      
+      // Add slight randomization to avoid perfect circle
+      const jitter = 0.05;
+      const randomX = x + (Math.random() - 0.5) * jitter;
+      const randomY = y + (Math.random() - 0.5) * jitter;
+      
+      // Ensure within bounds
+      const boundedX = Math.min(Math.max(randomX, 0.15), 0.85);
+      const boundedY = Math.min(Math.max(randomY, 0.15), 0.85);
+      
+      newPositions.set(node.id, { x: boundedX, y: boundedY });
+    });
+    
+    setNodePositions(newPositions);
+  }, [nodes]);
 
   // Handle node drag start
   const handleMouseDown = (event: MouseEvent, nodeId: number) => {
@@ -27,13 +66,14 @@ const Graph = ({ nodes, connections, currentConceptIndex, updateNodePositions }:
     
     // Find node and container
     const node = nodes.find(n => n.id === nodeId);
+    const position = nodePositions.get(nodeId);
     const container = containerRef.current;
     
-    if (node && container) {
+    if (node && position && container) {
       // Calculate offset from cursor to node center
       const containerRect = container.getBoundingClientRect();
-      const nodeX = (node.x / 100) * containerRect.width;
-      const nodeY = (node.y / 100) * containerRect.height;
+      const nodeX = position.x * containerRect.width;
+      const nodeY = position.y * containerRect.height;
       
       const offsetX = event.clientX - (containerRect.left + nodeX);
       const offsetY = event.clientY - (containerRect.top + nodeY);
@@ -52,25 +92,21 @@ const Graph = ({ nodes, connections, currentConceptIndex, updateNodePositions }:
     
     const containerRect = container.getBoundingClientRect();
     
-    // Calculate new position in percentage
-    const newX = ((event.clientX - containerRect.left - dragOffset.x) / containerRect.width) * 100;
-    const newY = ((event.clientY - containerRect.top - dragOffset.y) / containerRect.height) * 100;
+    // Calculate new position in normalized coordinates (0-1)
+    const newX = (event.clientX - containerRect.left - dragOffset.x) / containerRect.width;
+    const newY = (event.clientY - containerRect.top - dragOffset.y) / containerRect.height;
     
-    // Boundary margin adjusts based on screen size
-    const boundaryMargin = containerRect.width < 768 ? 20 : 15;
+    // Boundary margin in normalized coordinates
+    const boundaryMargin = 0.15;
     
     // Keep node within bounds (with some padding)
-    const boundedX = Math.min(Math.max(newX, boundaryMargin), 100 - boundaryMargin);
-    const boundedY = Math.min(Math.max(newY, boundaryMargin), 100 - boundaryMargin);
+    const boundedX = Math.min(Math.max(newX, boundaryMargin), 1 - boundaryMargin);
+    const boundedY = Math.min(Math.max(newY, boundaryMargin), 1 - boundaryMargin);
     
     // Update the node position
-    const updatedNodes = nodes.map(node => 
-      node.id === draggedNode 
-        ? { ...node, x: boundedX, y: boundedY } 
-        : node
-    );
-    
-    updateNodePositions(updatedNodes);
+    const newPositions = new Map(nodePositions);
+    newPositions.set(draggedNode, { x: boundedX, y: boundedY });
+    setNodePositions(newPositions);
   };
   
   // Handle node drag end
@@ -78,14 +114,8 @@ const Graph = ({ nodes, connections, currentConceptIndex, updateNodePositions }:
     if (draggedNode !== null) {
       setDraggedNode(null);
       
-      // Resolve any node overlaps
-      if (containerRef.current) {
-        const width = containerRef.current.clientWidth;
-        const height = containerRef.current.clientHeight;
-        
-        const resolvedNodes = resolveOverlap([...nodes], width, height);
-        updateNodePositions(resolvedNodes);
-      }
+      // Optional: save final positions to some state or send to backend
+      // For example, we could save positions to localStorage
     }
   };
 
@@ -173,24 +203,28 @@ const Graph = ({ nodes, connections, currentConceptIndex, updateNodePositions }:
     <GraphContainer ref={containerRef}>
       <GraphCanvas
         nodes={nodes}
-        connections={connections}
         containerWidth={containerDimensions.width}
         containerHeight={containerDimensions.height}
         hoveredNode={hoveredNode}
         draggedNode={draggedNode}
         animationOffset={animationOffset}
+        nodePositions={nodePositions}
       />
       
-      {nodes.map(node => (
-        <NodeComponent
-          key={node.id}
-          node={node}
-          isDragging={draggedNode === node.id}
-          onMouseEnter={() => setHoveredNode(node.id)}
-          onMouseLeave={() => setHoveredNode(null)}
-          onMouseDown={(e) => handleMouseDown(e, node.id)}
-        />
-      ))}
+      {nodes.map(node => {
+        const position = nodePositions.get(node.id) || { x: 0.5, y: 0.5 };
+        return (
+          <NodeComponent
+            key={node.id}
+            node={node}
+            position={position}
+            isDragging={draggedNode === node.id}
+            onMouseEnter={() => setHoveredNode(node.id)}
+            onMouseLeave={() => setHoveredNode(null)}
+            onMouseDown={(e) => handleMouseDown(e, node.id)}
+          />
+        );
+      })}
     </GraphContainer>
   );
 };

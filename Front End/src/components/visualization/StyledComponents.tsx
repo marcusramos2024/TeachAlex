@@ -90,29 +90,25 @@ export const GraphContainer = styled(Box)({
   height: 'calc(100% - 200px)',
 });
 
-export const NodeItem = styled(Paper)(({ isActive, isDragging }: { isActive?: boolean, isDragging?: boolean }) => ({
+export const NodeItem = styled(Paper)(({ isDragging }: { isDragging?: boolean }) => ({
   position: 'absolute',
   padding: '10px 15px',
   borderRadius: '20px',
-  backgroundColor: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.95)',
+  backgroundColor: 'rgba(255, 255, 255, 0.95)',
   color: '#1a62d6',
-  fontWeight: isActive ? 600 : 400,
+  fontWeight: 400,
   fontSize: 'clamp(0.75rem, 1.5vw, 0.95rem)',
   width: 'auto',
   maxWidth: 'clamp(120px, 22vw, 200px)',
   boxShadow: isDragging 
     ? '0 8px 25px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(255, 255, 255, 0.15)' 
-    : isActive 
-      ? '0 4px 20px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(255, 255, 255, 0.1)' 
-      : '0 2px 10px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(255, 255, 255, 0.08)',
-  zIndex: isDragging ? 10 : isActive ? 3 : 2,
+    : '0 2px 10px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(255, 255, 255, 0.08)',
+  zIndex: isDragging ? 10 : 2,
   transition: isDragging ? 'none' : 'all 0.3s ease',
   transform: isDragging 
     ? 'translate(-50%, -50%) scale(1.1)' 
-    : isActive 
-      ? 'translate(-50%, -50%) scale(1.05)' 
-      : 'translate(-50%, -50%) scale(1)',
-  animation: isActive && !isDragging ? `${pulse} 2s infinite` : 'none',
+    : 'translate(-50%, -50%) scale(1)',
+  animation: 'none',
   cursor: 'grab',
   userSelect: 'none',
   textAlign: 'center',

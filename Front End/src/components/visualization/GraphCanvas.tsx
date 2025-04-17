@@ -1,24 +1,24 @@
 import { useEffect, useRef } from 'react';
-import { Connection, Node } from './types';
+import { Node } from './types';
 
 interface GraphCanvasProps {
   nodes: Node[];
-  connections: Connection[];
   containerWidth: number;
   containerHeight: number;
   hoveredNode: number | null;
   draggedNode: number | null;
   animationOffset: number;
+  nodePositions: Map<number, { x: number, y: number }>;
 }
 
 const GraphCanvas = ({ 
   nodes, 
-  connections, 
   containerWidth, 
   containerHeight, 
   hoveredNode, 
   draggedNode,
-  animationOffset 
+  animationOffset,
+  nodePositions
 }: GraphCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -51,23 +51,34 @@ const GraphCanvas = ({
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // If there are no nodes or connections, we don't need to draw anything else
-    if (nodes.length === 0 || connections.length === 0) return;
+    // If there are no nodes with connections, we don't need to draw anything else
+    if (nodes.length === 0) return;
 
     // Determine appropriate line width based on container size
     const baseLineWidth = Math.max(1, Math.min(3, containerWidth / 300));
     const highlightedLineWidth = baseLineWidth * 1.5;
 
     // Draw connections
-    connections.forEach(connection => {
-      const source = nodes.find(node => node.id === connection.source);
-      const target = nodes.find(node => node.id === connection.target);
+    nodes.forEach(sourceNode => {
+      // Skip if node has no connections
+      if (!sourceNode.connections || sourceNode.connections.length === 0) return;
       
-      if (source && target) {
-        const sourceX = (source.x / 100) * canvas.width;
-        const sourceY = (source.y / 100) * canvas.height;
-        const targetX = (target.x / 100) * canvas.width;
-        const targetY = (target.y / 100) * canvas.height;
+      const sourcePos = nodePositions.get(sourceNode.id);
+      if (!sourcePos) return;
+      
+      const sourceX = sourcePos.x * canvas.width;
+      const sourceY = sourcePos.y * canvas.height;
+      
+      // Draw connection to each connected node
+      sourceNode.connections.forEach(targetId => {
+        const targetNode = nodes.find(node => node.id === targetId);
+        if (!targetNode) return;
+        
+        const targetPos = nodePositions.get(targetId);
+        if (!targetPos) return;
+        
+        const targetX = targetPos.x * canvas.width;
+        const targetY = targetPos.y * canvas.height;
         
         // Calculate line length
         const dx = targetX - sourceX;
@@ -75,10 +86,10 @@ const GraphCanvas = ({
         
         // Determine if this connection involves the hovered node
         const isHighlighted = 
-          hoveredNode === source.id || 
-          hoveredNode === target.id ||
-          draggedNode === source.id ||
-          draggedNode === target.id;
+          hoveredNode === sourceNode.id || 
+          hoveredNode === targetId ||
+          draggedNode === sourceNode.id ||
+          draggedNode === targetId;
         
         // Set line style based on highlight state and screen size
         ctx.strokeStyle = isHighlighted 
@@ -109,14 +120,14 @@ const GraphCanvas = ({
         ctx.lineTo(targetX - arrowSize * Math.cos(angle + Math.PI / 6), 
                 targetY - arrowSize * Math.sin(angle + Math.PI / 6));
         ctx.stroke();
-      }
+      });
     });
   };
 
   // Draw connections whenever relevant props change
   useEffect(() => {
     drawConnections();
-  }, [nodes, connections, containerWidth, containerHeight, hoveredNode, draggedNode, animationOffset]);
+  }, [nodes, containerWidth, containerHeight, hoveredNode, draggedNode, animationOffset, nodePositions]);
 
   return (
     <canvas 
