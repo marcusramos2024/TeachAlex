@@ -42,14 +42,6 @@ const Title = styled(Typography)({
   textShadow: '0px 2px 5px rgba(0, 0, 0, 0.08)',
 });
 
-// Optional side elements that don't affect centering
-const SideElement = styled(Box)({
-  position: 'absolute',
-  right: 0,
-  top: '50%',
-  transform: 'translateY(-50%)',
-});
-
 const Navbar = () => {  
   return (
     <StyledAppBar position="static">
@@ -59,11 +51,6 @@ const Navbar = () => {
             <LogoImage src="/Logo.png" alt="Logo" />
             <Title>TeachAlex.com</Title>
           </LogoContainer>
-          
-          {/* Optional side element that doesn't affect centering */}
-          <SideElement>
-            {/* Optional controls can go here */}
-          </SideElement>
         </NavbarContent>
       </Toolbar>
     </StyledAppBar>

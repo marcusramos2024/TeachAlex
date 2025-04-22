@@ -1,13 +1,14 @@
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box, styled, useMediaQuery } from '@mui/material';
-import { BrowserRouter as Router, Routes, Route} from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate} from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import VisualizationPane from './components/VisualizationPane';
 import ChatInterface from './components/ChatInterface';
 import Navbar from './components/Navbar';
 import PDFUpload from './components/PDFUpload';
 import { SpeedInsights } from "@vercel/speed-insights/react"
+import { apiService } from './services/api';
 
 const theme = createTheme({
   palette: {
@@ -89,6 +90,24 @@ const RightPanel = styled(Box)<{ leftPanelCollapsed: boolean }>(({ leftPanelColl
   transition: 'flex 0.3s ease',
 }));
 
+// Protected route component that checks for file upload
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  // Check if a file has been uploaded
+  const isFileUploaded = apiService.isFileUploaded();
+  
+  // If no file has been uploaded, redirect to the upload page
+  if (!isFileUploaded) {
+    return <Navigate to="/" replace />;
+  }
+  
+  // Otherwise, render the children
+  return <>{children}</>;
+};
+
 function App() {
   const isMobile = useMediaQuery('(max-width:768px)');
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
@@ -123,17 +142,19 @@ function App() {
             </Box>
           } />
           <Route path="/chat" element={
-            <AppContainer>
-              <Navbar />
-              <MainContent>
-                <LeftPanel collapsed={leftPanelCollapsed}>
-                  <VisualizationPane onToggleCollapse={handleToggleCollapse} isCollapsed={leftPanelCollapsed} />
-                </LeftPanel>
-                <RightPanel leftPanelCollapsed={leftPanelCollapsed}>
-                  <ChatInterface />
-                </RightPanel>
-              </MainContent>
-            </AppContainer>
+            <ProtectedRoute>
+              <AppContainer>
+                <Navbar />
+                <MainContent>
+                  <LeftPanel collapsed={leftPanelCollapsed}>
+                    <VisualizationPane onToggleCollapse={handleToggleCollapse} isCollapsed={leftPanelCollapsed} />
+                  </LeftPanel>
+                  <RightPanel leftPanelCollapsed={leftPanelCollapsed}>
+                    <ChatInterface />
+                  </RightPanel>
+                </MainContent>
+              </AppContainer>
+            </ProtectedRoute>
           } />
         </Routes>
       </Router>

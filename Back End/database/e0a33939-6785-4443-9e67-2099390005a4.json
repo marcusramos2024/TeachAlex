@@ -1,0 +1,39 @@
+{
+    "Id": "e0a33939-6785-4443-9e67-2099390005a4",
+    "documentText": "Biology Exam Evolution and Natural Selection\nEvolution and Natural Selection\nQ1: Which of the following best defines natural selection?\n(A) Random changes in a population.\n(B) The process where organisms with advantageous traits survive and reproduce.\n(C) The inheritance of acquired characteristics.\n(D) A predetermined evolution of species.\nQ2: Why is genetic variation essential for evolution?\n(A) It prevents any changes from occurring.\n(B) It provides the raw material for natural selection.\n(C) It ensures that every offspring is identical.\n(D) It eliminates mutations.\nQ3: Which scenario best illustrates adaptation in a population?\n(A) A sudden change in the environment causes all individuals to evolve simultane-\nously.\n(B) Individuals with traits that favor survival reproduce more, gradually changing the\npopulation.\n(C) All organisms immediately develop new traits.\n(D) Evolution occurs independently of environmental pressures.\nQ4: What is the relationship between genotype and phenotype?\n(A) The genotype is the set of observable traits, while the phenotype is the genetic\ncode.\n(B) The genotype determines the phenotype, which consists of observable traits.\n(C) The phenotype alters the genotype over time.\n(D) There is no relationship between genotype and phenotype.\nQ5: Coevolution is best described as:\n(A) Two species evolving without affecting each other.\n(B) One species evolving while another remains unchanged.\n(C) Two or more species influencing each other\u2019s evolutionary trajectory.\n(D) Evolution that occurs independently in isolated populations.\nQ6: A selective pressure in an environment will:\n1Biology Exam Evolution and Natural Selection\n(A) Have no impact on the traits of a population.\n(B) Lead to the immediate appearance of new species.\n(C) Favor the survival and reproduction of individuals with advantageous traits.\n(D) Eliminate all genetic diversity.\nQ7: Which factor most directly contributes to the genetic diversity of a population?\n(A) A stable, unchanging environment.\n(B) Mutations, sexual reproduction, and genetic recombination.\n(C) A lack of competition.\n(D) Cloning of individuals.\nQ8: How can environmental changes drive evolutionary change?\n(A) They have no effect on evolution.\n(B) They alter selective pressures, shifting the frequency of traits over time.\n(C) They cause immediate extinction of all individuals.\n(D) They guarantee that all traits become advantageous.\nQ9: Evolutionary trade-offs refer to:\n(A) Situations where a trait has both costs and benefits.\n(B) Trade-offs that always benefit the organism.\n(C) The elimination of all negative traits.\n(D) An unchanging balance in the genetic code.\nQ10: The modern synthesis of evolutionary theory combines:\n(A) Natural selection with the inheritance of acquired characteristics.\n(B) Mendelian genetics with natural selection to explain how traits are passed on and\nevolve.\n(C) Random mutation with genetic drift exclusively.\n(D) The concept of evolution with no genetic component.\nAnswer Key:\nQ1:(B) Q2:(B) Q3:(B) Q4:(B) Q5:(C) Q6:(C) Q7:(B) Q8:(B)\nQ9:(A) Q10: (B)\n2",
+    "concepts": [
+        {
+            "name": "Natural Selection and Adaptation",
+            "progress": 0,
+            "subConcepts": []
+        },
+        {
+            "name": "Genetic Variation and Diversity",
+            "progress": 0,
+            "subConcepts": []
+        },
+        {
+            "name": "Genotype-Phenotype Relationship",
+            "progress": 0,
+            "subConcepts": []
+        },
+        {
+            "name": "Coevolution",
+            "progress": 0,
+            "subConcepts": []
+        },
+        {
+            "name": "Evolutionary Trade-offs",
+            "progress": 0,
+            "subConcepts": []
+        },
+        {
+            "name": "Modern Synthesis",
+            "progress": 0,
+            "subConcepts": []
+        }
+    ],
+    "conversation_history": [
+        "Alex: How do advantageous traits develop in a population, and how do these traits contribute to the process of natural selection?"
+    ]
+}

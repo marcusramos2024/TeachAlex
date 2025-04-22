@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { Box, Paper, TextField, IconButton, styled, Tooltip, Typography } from '@mui/material';
+import { Box, Paper, TextField, IconButton, styled, Tooltip, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button, List, ListItem, ListItemText, Chip } from '@mui/material';
 import { Send as SendIcon, Brush as BrushIcon, Close as CloseIcon } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
-import DrawingCanvas from './DrawingCanvas';
+import DrawingCanvas from './canvas/DrawingCanvas';
 import { Message } from '../types';
 import apiService from '../services/api';
+import { useLocation } from 'react-router-dom';
 
 const ChatContainer = styled(Box)({
   display: 'flex',
@@ -156,16 +157,10 @@ const DrawingPreview = styled('img')({
 const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "welcome-1",
-      text: "Welcome to TeachAlex! I'm here to help you learn and understand new concepts.",
+      id: "welcome",
+      text: "Hi, I'm Alex! I'm excited to learn with you. As we discuss different topics, I'll share my understanding using numbers and visuals in the pannel on the left. You can teach me through our conversations or even draw things out—just like we're at the whiteboard in class!",
       isUser: false,
       timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
-    },
-    {
-      id: "welcome-2",
-      text: "You can ask me questions, share ideas, or even draw diagrams to explain your thoughts.",
-      isUser: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 4), // 4 minutes ago
     }
   ]);
   
@@ -173,7 +168,20 @@ const ChatInterface = () => {
   const [showDrawingCanvas, setShowDrawingCanvas] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [currentDrawing, setCurrentDrawing] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
+
+  // New state for the concepts popup
+  const [showConceptsPopup, setShowConceptsPopup] = useState(false);
+  const [concepts, setConcepts] = useState<string[]>([]);
+  const location = useLocation();
+
+  // Effect to set conversation ID from location state
+  useEffect(() => {
+    if (location.state?.conversationId) {
+      setConversationId(location.state.conversationId);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (messageListRef.current) {
@@ -181,8 +189,84 @@ const ChatInterface = () => {
     }
   }, [messages, isTyping]);
 
+  // Effect to add initial message if it exists in location state
+  useEffect(() => {
+    if (location.state?.initialMessage) {
+      // Prevent duplicate initial messages by adding a one-time flag
+      const initialMessageAdded = sessionStorage.getItem('initialMessageAdded') === 'true';
+      
+      if (!initialMessageAdded) {
+        setMessages(prev => [
+          ...prev, 
+          {
+            id: "initial-message",
+            text: location.state.initialMessage,
+            isUser: false,
+            timestamp: new Date(),
+          }
+        ]);
+        
+        // Mark that we've added the initial message
+        sessionStorage.setItem('initialMessageAdded', 'true');
+      }
+    }
+  }, [location.state?.initialMessage]);
+
+  // Effect to process concept names for popup
+  useEffect(() => {
+    if (location.state?.newConcepts && Array.isArray(location.state.newConcepts)) {
+      // Extract names for popup
+      const conceptNames = location.state.newConcepts.map((concept: any) => concept.name);
+      setConcepts(conceptNames);
+    }
+  }, [location.state]);
+
+  // New effect to show concepts popup once on page load
+  useEffect(() => {
+    // Check if concepts popup has been shown before
+    const conceptsPopupShown = sessionStorage.getItem('conceptsPopupShown') === 'true';
+    
+    if (!conceptsPopupShown && concepts.length > 0) {
+      setShowConceptsPopup(true);
+    }
+  }, [concepts]);
+
+  // Function to handle closing the concepts popup
+  const handleCloseConceptsPopup = () => {
+    setShowConceptsPopup(false);
+    // Mark that we've shown the popup
+    sessionStorage.setItem('conceptsPopupShown', 'true');
+  };
+
+  // Function to dispatch concept updates to the VisualizationPane
+  const updateConcepts = (conceptsData: any[]) => {
+    if (!conceptsData || !Array.isArray(conceptsData)) return;
+    
+    // Dispatch a custom event with the concepts data
+    const event = new CustomEvent('conceptsUpdated', { 
+      detail: { concepts: conceptsData } 
+    });
+    window.dispatchEvent(event);
+  };
+
   const handleSendMessage = async () => {
     if ((!inputText.trim() && !currentDrawing) || isTyping) return;
+
+    // If we don't have a conversation ID, we can't send the message
+    if (!conversationId) {
+      console.error('No conversation ID available');
+      
+      // Add error message
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        text: "Sorry, there's no active conversation. Please upload a document first.", 
+        isUser: false,
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+      return;
+    }
 
     // If we have both drawing and text, send them as separate messages
     if (currentDrawing && inputText.trim()) {
@@ -210,7 +294,7 @@ const ChatInterface = () => {
       // Send to backend
       try {
         setIsTyping(true);
-        const response = await apiService.sendMessage(inputText, currentDrawing);
+        const response = await apiService.sendMessage(inputText, currentDrawing, conversationId);
         
         // Add AI response
         const aiMessage: Message = {
@@ -221,6 +305,12 @@ const ChatInterface = () => {
         };
         
         setMessages(prev => [...prev, aiMessage]);
+        
+        // Update concepts if returned from API
+        if (response.concepts && Array.isArray(response.concepts)) {
+          // Pass concepts to the VisualizationPane component via custom event
+          updateConcepts(response.concepts);
+        }
       } catch (error) {
         console.error('Error sending message to backend:', error);
         
@@ -253,7 +343,8 @@ const ChatInterface = () => {
         setIsTyping(true);
         const response = await apiService.sendMessage(
           inputText || "Here's my drawing:", 
-          currentDrawing
+          currentDrawing,
+          conversationId
         );
         
         // Add AI response
@@ -265,6 +356,12 @@ const ChatInterface = () => {
         };
         
         setMessages(prev => [...prev, aiMessage]);
+        
+        // Update concepts if returned from API
+        if (response.concepts && Array.isArray(response.concepts)) {
+          // Pass concepts to the VisualizationPane component via custom event
+          updateConcepts(response.concepts);
+        }
       } catch (error) {
         console.error('Error sending message to backend:', error);
         
@@ -467,6 +564,108 @@ const ChatInterface = () => {
           </Tooltip>
         </InputContainer>
       )}
+
+      {/* Concepts Popup */}
+      <Dialog 
+        open={showConceptsPopup} 
+        onClose={handleCloseConceptsPopup}
+        PaperProps={{
+          component: motion.div,
+          sx: {
+            borderRadius: '18px',
+            maxWidth: '500px',
+            p: 1,
+            overflow: 'hidden'
+          },
+          initial: { opacity: 0, y: 20, scale: 0.9 },
+          animate: { opacity: 1, y: 0, scale: 1 },
+          transition: { duration: 0.3, ease: "easeOut" }
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 0 }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Typography variant="h5" fontWeight="600" color="primary">
+              Extracted Concepts
+            </Typography>
+            <IconButton 
+              size="small" 
+              onClick={handleCloseConceptsPopup}
+              sx={{ 
+                bgcolor: 'rgba(0,0,0,0.04)', 
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' } 
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            The following key concepts were identified from your document. You can discuss and learn about these topics during your chat.
+          </Typography>
+          <Box 
+            display="flex" 
+            flexWrap="wrap" 
+            gap={1.5} 
+            justifyContent="center"
+            component={motion.div}
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.1
+                }
+              }
+            }}
+          >
+            {concepts.map((concept, index) => (
+              <Chip 
+                key={index}
+                label={concept}
+                color="primary"
+                component={motion.div}
+                variants={{
+                  hidden: { y: 20, opacity: 0 },
+                  visible: { y: 0, opacity: 1 }
+                }}
+                sx={{ 
+                  borderRadius: '16px', 
+                  px: 1.5,
+                  py: 2.5,
+                  fontWeight: 500,
+                  fontSize: '0.95rem',
+                  backgroundColor: index % 2 === 0 ? '#e7f0ff' : '#f0f8ff',
+                  color: '#2466cc',
+                  border: 'none',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                }}
+              />
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', p: 3 }}>
+          <Button 
+            onClick={handleCloseConceptsPopup} 
+            color="primary" 
+            variant="contained"
+            sx={{ 
+              borderRadius: '24px',
+              px: 4,
+              py: 1,
+              textTransform: 'none',
+              fontSize: '1rem',
+              fontWeight: 500
+            }}
+          >
+            Got it
+          </Button>
+        </DialogActions>
+      </Dialog>
     </ChatContainer>
   );
 };
