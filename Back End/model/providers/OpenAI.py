@@ -16,7 +16,7 @@ class Model(str, enum.Enum):
 
 class OpenAI():
     def __init__(self, model: Model):
-        self.__api_key = "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"
+        self.__api_key = "INSERT_YOUR_API_KEY_HERE"
         self.__model = model
     
     def query(self, prompt: str, temperature=None):
@@ -38,3 +38,7 @@ class OpenAI():
         response = response.choices[0].message.content
 
         return response    
+
+model = OpenAI(Model.CHATGPT_4O_LATEST)
+
+print(model.query("asd"))
